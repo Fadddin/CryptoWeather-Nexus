@@ -67,7 +67,9 @@ useEffect(() => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {news.map((item) => (
+          {news
+          .slice(0, 5)
+          .map((item) => (
             <div key={item.id} className="space-y-2">
               <a
                 href={item.url}
