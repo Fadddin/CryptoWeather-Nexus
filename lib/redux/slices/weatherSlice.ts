@@ -4,7 +4,6 @@ import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/tool
 import axios from "axios"
 
 const API_KEY = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY
-console.log(API_KEY)
 const BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 export interface CityWeather {
@@ -17,19 +16,12 @@ export interface CityWeather {
   isFavorite: boolean
 }
 
-const allCityData: Record<string, { name: string }> = {
-  "new-york": { name: "New York" },
-  "san-francisco": { name: "San Francisco" },
-  "mumbai": { name: "Mumbai" },
-  "london": { name: "London" },
-  "tokyo": { name: "Tokyo" },
-}
-
 interface WeatherState {
   cities: CityWeather[]
   loading: boolean
   error: string | null
   selectedCityIds: string[]
+  favoriteCityIds: string[] // ✅ NEW
 }
 
 const defaultCityIds = ["new-york", "san-francisco", "mumbai"]
@@ -39,15 +31,12 @@ const initialState: WeatherState = {
   loading: false,
   error: null,
   selectedCityIds: defaultCityIds,
+  favoriteCityIds: [], // ✅ INIT
 }
 
 export const fetchWeather = createAsyncThunk(
   "weather/fetchWeather",
   async (cityIds: string[] = [], thunkAPI) => {
-    if (!Array.isArray(cityIds) || cityIds.length === 0) {
-      throw new Error("No valid city IDs provided")
-    }
-
     const cityNameMap: Record<string, string> = {
       "new-york": "New York",
       "san-francisco": "San Francisco",
@@ -98,19 +87,28 @@ export const fetchWeather = createAsyncThunk(
   }
 )
 
-
 const weatherSlice = createSlice({
   name: "weather",
   initialState,
   reducers: {
     toggleFavoriteCity: (state, action: PayloadAction<string>) => {
-      const city = state.cities.find((c) => c.id === action.payload)
+      const cityId = action.payload
+      const city = state.cities.find((c) => c.id === cityId)
       if (city) {
         city.isFavorite = !city.isFavorite
+      }
+
+      if (state.favoriteCityIds.includes(cityId)) {
+        state.favoriteCityIds = state.favoriteCityIds.filter((id) => id !== cityId)
+      } else {
+        state.favoriteCityIds.push(cityId)
       }
     },
     setSelectedCities: (state, action: PayloadAction<string[]>) => {
       state.selectedCityIds = action.payload
+    },
+    setFavoriteCityIds: (state, action: PayloadAction<string[]>) => {
+      state.favoriteCityIds = action.payload
     },
   },
   extraReducers: (builder) => {
@@ -120,16 +118,12 @@ const weatherSlice = createSlice({
         state.error = null
       })
       .addCase(fetchWeather.fulfilled, (state, action) => {
-        const updatedCities = action.payload.map((newCity) => {
-          const existingCity = state.cities.find((c) => c.id === newCity.id)
-          return {
-            ...newCity,
-            isFavorite: existingCity ? existingCity.isFavorite : newCity.isFavorite,
-          }
-        })
-        state.cities = updatedCities
+        state.cities = action.payload.map((city) => ({
+          ...city,
+          isFavorite: state.favoriteCityIds.includes(city.id), // ✅ Mark favorites
+        }))
         state.loading = false
-        state.error = null // ✅ clear error here
+        state.error = null
       })
       .addCase(fetchWeather.rejected, (state, action) => {
         state.loading = false
@@ -138,5 +132,10 @@ const weatherSlice = createSlice({
   },
 })
 
-export const { toggleFavoriteCity, setSelectedCities } = weatherSlice.actions
+export const {
+  toggleFavoriteCity,
+  setSelectedCities,
+  setFavoriteCityIds, // ✅ Export new action
+} = weatherSlice.actions
+
 export default weatherSlice.reducer

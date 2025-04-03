@@ -41,17 +41,17 @@ export default function Dashboard() {
     dispatch(fetchNews())
 
     // Refresh data every 60 seconds
-    const refreshInterval = setInterval(() => {
-      if (selectedCryptoIds.length > 0) {
-        dispatch(fetchCryptos(selectedCryptoIds))
-      }
+    // const refreshInterval = setInterval(() => {
+    //   if (selectedCryptoIds.length > 0) {
+    //     dispatch(fetchCryptos(selectedCryptoIds))
+    //   }
 
-      if (selectedCityIds.length > 0) {
-        dispatch(fetchWeather(selectedCityIds))
-      }
+    //   if (selectedCityIds.length > 0) {
+    //     dispatch(fetchWeather(selectedCityIds))
+    //   }
 
-      dispatch(fetchNews())
-    }, 60000)
+    //   dispatch(fetchNews())
+    // }, 60000)
 
     // Set up WebSocket for real-time price alert toasts
     const { socket, disconnect } = connectWebSocket()
@@ -69,7 +69,7 @@ export default function Dashboard() {
 
           const change = ((currentPrice - lastPrice) / lastPrice) * 100
 
-          if (Math.abs(change) >= 0.5) {
+          if (Math.abs(change) >= 0.01) {
             toast({
               title: "Price Alert",
               description: `${crypto}: ${message}`,
@@ -77,13 +77,20 @@ export default function Dashboard() {
             lastPrices[crypto] = currentPrice
           }
         }
+        if (data.type === "weather_alert") {
+          toast({
+            title: `Weather Alert - ${data.city}`,
+            description: `${data.message} (mockdata) `,
+          })
+        }
+        
       }
     }
 
-    return () => {
-      clearInterval(refreshInterval)
-      disconnect()
-    }
+    // return () => {
+    //   clearInterval(refreshInterval)
+    //   disconnect()
+    // }
   }, [dispatch, toast, selectedCryptoIds, selectedCityIds])
 
   return (

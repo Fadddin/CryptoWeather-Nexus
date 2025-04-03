@@ -1,6 +1,6 @@
 "use client"
 
-import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit"
 import axios from "axios"
 
 interface Crypto {
@@ -18,6 +18,7 @@ interface CryptoState {
   loading: boolean
   error: string | null
   selectedCryptoIds: string[]
+  favoriteCryptoIds: string[]
 }
 
 const defaultIds = ["bitcoin", "ethereum", "solana"]
@@ -27,6 +28,7 @@ const initialState: CryptoState = {
   loading: false,
   error: null,
   selectedCryptoIds: defaultIds,
+  favoriteCryptoIds: [],
 }
 
 export const fetchCryptos = createAsyncThunk(
@@ -56,11 +58,21 @@ const cryptoSlice = createSlice({
   initialState,
   reducers: {
     toggleFavoriteCrypto: (state, action: PayloadAction<string>) => {
-      const crypto = state.cryptos.find((c) => c.id === action.payload)
+      const id = action.payload
+      const crypto = state.cryptos.find((c) => c.id === id)
       if (crypto) crypto.isFavorite = !crypto.isFavorite
+
+      if (state.favoriteCryptoIds.includes(id)) {
+        state.favoriteCryptoIds = state.favoriteCryptoIds.filter((c) => c !== id)
+      } else {
+        state.favoriteCryptoIds.push(id)
+      }
     },
     setSelectedCryptos: (state, action: PayloadAction<string[]>) => {
       state.selectedCryptoIds = action.payload
+    },
+    setFavoriteCryptoIds: (state, action: PayloadAction<string[]>) => {
+      state.favoriteCryptoIds = action.payload
     },
     updateCryptoPrice: (
       state,
@@ -79,11 +91,10 @@ const cryptoSlice = createSlice({
         state.error = null
       })
       .addCase(fetchCryptos.fulfilled, (state, action) => {
-        state.cryptos = action.payload.map((newCrypto: Crypto) => {
-          const existing = state.cryptos.find((c) => c.id === newCrypto.id)
+        state.cryptos = action.payload.map((newCrypto : Crypto) => {
           return {
             ...newCrypto,
-            isFavorite: existing?.isFavorite ?? false,
+            isFavorite: state.favoriteCryptoIds.includes(newCrypto.id),
           }
         })
         state.loading = false
@@ -92,7 +103,6 @@ const cryptoSlice = createSlice({
       .addCase(fetchCryptos.rejected, (state, action) => {
         state.loading = false
         state.error = action.error.message || "Failed to fetch cryptocurrency data"
-        state.error = null
       })
   },
 })
@@ -100,7 +110,8 @@ const cryptoSlice = createSlice({
 export const {
   toggleFavoriteCrypto,
   setSelectedCryptos,
-  updateCryptoPrice, // ✅ exported
+  setFavoriteCryptoIds,
+  updateCryptoPrice,
 } = cryptoSlice.actions
 
 export default cryptoSlice.reducer

@@ -31,7 +31,7 @@ export function connectCryptoWebSocket(
     }
 
     socket.onerror = (err) => {
-      console.error("[WebSocket] Error:", err)
+      console.log("[WebSocket] Error:", err)
     }
 
     socket.onclose = () => {
@@ -68,6 +68,34 @@ export function connectWebSocket() {
     },
   }
 
+  const interval = setInterval(() => {
+    const fakeEvents = [
+      {
+        type: "price_alert",
+        crypto: "Bitcoin",
+        message: `Price updated: $${(28000 + Math.random() * 1000).toFixed(2)}`,
+      },
+      {
+        type: "weather_alert",
+        city: "Mumbai",
+        message: "⚠️ Heavy rainfall alert for Mumbai today!",
+      },
+      {
+        type: "weather_alert",
+        city: "London",
+        message: "🌧️ Storm expected in London. Stay safe!",
+      },
+    ]
+
+    const random = fakeEvents[Math.floor(Math.random() * fakeEvents.length)]
+
+    const mockEvent = {
+      data: JSON.stringify(random),
+    }
+
+    wrapper.socket.onmessage?.(mockEvent as MessageEvent)
+  }, 15000) // Every 15 seconds
+
   const connect = () => {
     socket = new WebSocket(url)
 
@@ -91,7 +119,7 @@ export function connectWebSocket() {
     }
 
     socket.onerror = (err) => {
-      console.error("[WebSocket] Dashboard socket error:", err)
+      console.log("[WebSocket] Dashboard socket error:", err)
     }
 
     socket.onclose = () => {

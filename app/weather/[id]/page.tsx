@@ -136,6 +136,7 @@ export default function WeatherDetailPage() {
         <CardHeader>
           <CardTitle>Historical Data</CardTitle>
           <CardDescription>Weather data for the past 7 days</CardDescription>
+          <CardDescription>Dummy data, history not available in free tier</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="chart">

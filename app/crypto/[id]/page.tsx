@@ -2,12 +2,30 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, BarChart3 } from "lucide-react"
+import {
+  ArrowLeft,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  BarChart3,
+} from "lucide-react"
 import axios from "axios"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import CryptoChart from "@/components/crypto/crypto-chart"
 import CryptoMetrics from "@/components/crypto/crypto-metrics"
 import { connectCryptoWebSocket } from "@/lib/websocket"
@@ -19,12 +37,15 @@ export default function CryptoDetailPage() {
   const [crypto, setCrypto] = useState<any>(null)
   const [chartData, setChartData] = useState<{ date: string; price: number }[]>([])
   const [loading, setLoading] = useState(true)
+  const [timeframe, setTimeframe] = useState("7") // default is 7 days
 
-  // Fetch real crypto data and history
+  // Fetch crypto details + chart data
   useEffect(() => {
     async function fetchCryptoDetails() {
       try {
-        // 1. Current market data
+        setLoading(true)
+
+        // Current price data
         const res = await axios.get("https://api.coingecko.com/api/v3/coins/markets", {
           params: {
             vs_currency: "usd",
@@ -33,28 +54,29 @@ export default function CryptoDetailPage() {
         })
         const data = res.data[0]
 
-        // 2. Historical chart data (7 days)
+        // Chart history
         const historyRes = await axios.get(
           `https://api.coingecko.com/api/v3/coins/${id}/market_chart`,
           {
             params: {
               vs_currency: "usd",
-              days: 7,
+              days: timeframe,
             },
           }
         )
 
-        const history = historyRes.data.prices.map(([timestamp, price]: [number, number]) => {
-          const date = new Date(timestamp).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })
-          return { date, price }
-        })
+        const history = historyRes.data.prices.map(
+          ([timestamp, price]: [number, number]) => {
+            const date = new Date(timestamp).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })
+            return { date, price }
+          }
+        )
 
         setChartData(history)
 
-        // 3. Set coin state
         setCrypto({
           id: data.id,
           name: data.name,
@@ -80,21 +102,19 @@ export default function CryptoDetailPage() {
     if (id) {
       fetchCryptoDetails()
     }
-  }, [id, router])
+  }, [id, timeframe, router])
 
-  // Real-time price updates
+  // Live updates
   useEffect(() => {
     if (!crypto?.id) return
 
     const { disconnect } = connectCryptoWebSocket([crypto.id], (coinId, price) => {
       setCrypto((prev: any) => {
         if (!prev || prev.id !== coinId) return prev
-
         const changePercent = ((price - prev.initialPrice) / prev.initialPrice) * 100
-
         return {
           ...prev,
-          price: price,
+          price,
           priceChange24h: changePercent,
         }
       })
@@ -102,6 +122,15 @@ export default function CryptoDetailPage() {
 
     return () => disconnect()
   }, [crypto?.id])
+
+  const extendedMetrics = {
+    volume24h: crypto?.price * 1000000,
+    allTimeHigh: crypto?.ath,
+    allTimeHighDate: new Date(crypto?.athDate).toLocaleDateString(),
+    circulatingSupply: Math.round(crypto?.circulatingSupply || 0),
+    maxSupply: crypto?.maxSupply || "∞",
+    rank: crypto?.rank,
+  }
 
   if (!crypto || loading) {
     return (
@@ -112,18 +141,9 @@ export default function CryptoDetailPage() {
           </Button>
           <h1 className="text-2xl font-bold ml-2">Loading...</h1>
         </div>
-        <div className="h-64 bg-muted rounded-md animate-pulse"></div>
+        <div className="h-64 bg-muted rounded-md animate-pulse" />
       </div>
     )
-  }
-
-  const extendedMetrics = {
-    volume24h: crypto.price * 1000000, // Simulated
-    allTimeHigh: crypto.ath,
-    allTimeHighDate: new Date(crypto.athDate).toLocaleDateString(),
-    circulatingSupply: Math.round(crypto.circulatingSupply),
-    maxSupply: crypto.maxSupply || "∞",
-    rank: crypto.rank,
   }
 
   return (
@@ -137,6 +157,7 @@ export default function CryptoDetailPage() {
         </h1>
       </div>
 
+      {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader className="pb-2">
@@ -192,10 +213,27 @@ export default function CryptoDetailPage() {
         </Card>
       </div>
 
+      {/* Chart & Metrics Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Historical Data</CardTitle>
-          <CardDescription>Price history and trading volume (last 7 days)</CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Historical Data</CardTitle>
+              <CardDescription>
+                Price history and trading volume
+              </CardDescription>
+            </div>
+            <Select value={timeframe} onValueChange={setTimeframe}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Last 24 Hours</SelectItem>
+                <SelectItem value="7">Last 7 Days</SelectItem>
+                <SelectItem value="30">Last 30 Days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="chart">
