@@ -16,12 +16,12 @@ export interface CityWeather {
   isFavorite: boolean
 }
 
-interface WeatherState {
+export interface WeatherState {
   cities: CityWeather[]
   loading: boolean
   error: string | null
   selectedCityIds: string[]
-  favoriteCityIds: string[] // ✅ NEW
+  favoriteCityIds: string[]
 }
 
 const defaultCityIds = ["new-york", "san-francisco", "mumbai"]
@@ -31,12 +31,19 @@ const initialState: WeatherState = {
   loading: false,
   error: null,
   selectedCityIds: defaultCityIds,
-  favoriteCityIds: [], // ✅ INIT
+  favoriteCityIds: [],
 }
 
-export const fetchWeather = createAsyncThunk(
+export const fetchWeather = createAsyncThunk<CityWeather[], string[]>(
   "weather/fetchWeather",
-  async (cityIds: string[] = [], thunkAPI) => {
+  async (cityIds, thunkAPI) => {
+    // Get favorite city IDs from the current state.
+    const state = thunkAPI.getState() as { weather: WeatherState };
+    const combinedCityIds = Array.from(new Set([
+      ...cityIds,
+      ...state.weather.favoriteCityIds,
+    ]));
+
     const cityNameMap: Record<string, string> = {
       "new-york": "New York",
       "san-francisco": "San Francisco",
@@ -50,12 +57,12 @@ export const fetchWeather = createAsyncThunk(
       "moscow": "Moscow",
       "shanghai": "Shanghai",
       "singapore": "Singapore",
-    }
+    };
 
     const results = await Promise.allSettled(
-      cityIds.map(async (id) => {
-        const name = cityNameMap[id]
-        if (!name) throw new Error(`Unknown city ID: ${id}`)
+      combinedCityIds.map(async (id) => {
+        const name = cityNameMap[id];
+        if (!name) throw new Error(`Unknown city ID: ${id}`);
 
         const response = await axios.get(BASE_URL, {
           params: {
@@ -63,29 +70,34 @@ export const fetchWeather = createAsyncThunk(
             appid: API_KEY,
             units: "metric",
           },
-        })
+        });
 
-        const data = response.data
+        const data = response.data;
 
         return {
           id,
           name: data.name,
-          temperature: Math.round(data.main.temp),
+          // Use Math.floor here if Option A is chosen for temperature rounding
+          temperature: Math.floor(data.main.temp),
           humidity: data.main.humidity,
           windSpeed: Math.round(data.wind.speed),
           condition: data.weather[0]?.description || "Unknown",
           isFavorite: false,
         }
       })
-    )
+    );
 
-    const successful = results.filter(
+    const fulfilled = results.filter(
       (r): r is PromiseFulfilledResult<CityWeather> => r.status === "fulfilled"
-    )
+    );
 
-    return successful.map((r) => r.value)
+    if (fulfilled.length === 0) {
+      return thunkAPI.rejectWithValue("Failed to fetch weather data");
+    }
+
+    return fulfilled.map((r) => r.value);
   }
-)
+);
 
 const weatherSlice = createSlice({
   name: "weather",
@@ -94,9 +106,7 @@ const weatherSlice = createSlice({
     toggleFavoriteCity: (state, action: PayloadAction<string>) => {
       const cityId = action.payload
       const city = state.cities.find((c) => c.id === cityId)
-      if (city) {
-        city.isFavorite = !city.isFavorite
-      }
+      if (city) city.isFavorite = !city.isFavorite
 
       if (state.favoriteCityIds.includes(cityId)) {
         state.favoriteCityIds = state.favoriteCityIds.filter((id) => id !== cityId)
@@ -120,14 +130,14 @@ const weatherSlice = createSlice({
       .addCase(fetchWeather.fulfilled, (state, action) => {
         state.cities = action.payload.map((city) => ({
           ...city,
-          isFavorite: state.favoriteCityIds.includes(city.id), // ✅ Mark favorites
+          isFavorite: state.favoriteCityIds.includes(city.id),
         }))
         state.loading = false
         state.error = null
       })
       .addCase(fetchWeather.rejected, (state, action) => {
         state.loading = false
-        state.error = action.error.message || "Failed to fetch weather data"
+        state.error = (action.payload as string) || "Failed to fetch weather data"
       })
   },
 })
@@ -135,7 +145,7 @@ const weatherSlice = createSlice({
 export const {
   toggleFavoriteCity,
   setSelectedCities,
-  setFavoriteCityIds, // ✅ Export new action
+  setFavoriteCityIds,
 } = weatherSlice.actions
 
 export default weatherSlice.reducer

@@ -13,7 +13,7 @@ interface Crypto {
   isFavorite: boolean
 }
 
-interface CryptoState {
+export interface CryptoState {
   cryptos: Crypto[]
   loading: boolean
   error: string | null
