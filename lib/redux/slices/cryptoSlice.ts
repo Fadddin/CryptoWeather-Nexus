@@ -39,8 +39,6 @@ export const fetchCryptos = createAsyncThunk(
       },
     })
 
-    console.log(response.data)
-
     return response.data.map((coin: any) => ({
       id: coin.id,
       name: coin.name,
@@ -64,6 +62,15 @@ const cryptoSlice = createSlice({
     setSelectedCryptos: (state, action: PayloadAction<string[]>) => {
       state.selectedCryptoIds = action.payload
     },
+    updateCryptoPrice: (
+      state,
+      action: PayloadAction<{ id: string; price: number }>
+    ) => {
+      const crypto = state.cryptos.find((c) => c.id === action.payload.id)
+      if (crypto) {
+        crypto.price = action.payload.price
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -73,7 +80,6 @@ const cryptoSlice = createSlice({
       })
       .addCase(fetchCryptos.fulfilled, (state, action) => {
         state.cryptos = action.payload.map((newCrypto: Crypto) => {
-      
           const existing = state.cryptos.find((c) => c.id === newCrypto.id)
           return {
             ...newCrypto,
@@ -86,9 +92,15 @@ const cryptoSlice = createSlice({
       .addCase(fetchCryptos.rejected, (state, action) => {
         state.loading = false
         state.error = action.error.message || "Failed to fetch cryptocurrency data"
+        state.error = null
       })
   },
 })
 
-export const { toggleFavoriteCrypto, setSelectedCryptos } = cryptoSlice.actions
+export const {
+  toggleFavoriteCrypto,
+  setSelectedCryptos,
+  updateCryptoPrice, // ✅ exported
+} = cryptoSlice.actions
+
 export default cryptoSlice.reducer

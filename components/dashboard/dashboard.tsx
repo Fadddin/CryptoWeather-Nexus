@@ -1,56 +1,81 @@
 "use client"
 
 import { useEffect } from "react"
-import { useDispatch } from "react-redux"
+import { useAppDispatch } from "@/lib/redux/hooks"
+import { useSelector } from "react-redux"
 import { Bell } from "lucide-react"
 
 import { fetchCryptos } from "@/lib/redux/slices/cryptoSlice"
 import { fetchWeather } from "@/lib/redux/slices/weatherSlice"
 import { fetchNews } from "@/lib/redux/slices/newsSlice"
+import { RootState } from "@/lib/redux/store"
 import { useToast } from "@/hooks/use-toast"
+import { connectWebSocket } from "@/lib/websocket"
+
 import CryptoSection from "@/components/dashboard/crypto-section"
 import WeatherSection from "@/components/dashboard/weather-section"
 import NewsSection from "@/components/dashboard/news-section"
 import { Button } from "@/components/ui/button"
-import { connectWebSocket } from "@/lib/websocket"
 
 export default function Dashboard() {
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const { toast } = useToast()
 
+  const selectedCryptoIds = useSelector(
+    (state: RootState) => state.crypto.selectedCryptoIds
+  )
+  const selectedCityIds = useSelector(
+    (state: RootState) => state.weather.selectedCityIds
+  )
+
   useEffect(() => {
-    // Fetch initial data
-    dispatch(fetchCryptos())
-    dispatch(fetchWeather())
+    // Initial fetch
+    if (selectedCryptoIds.length > 0) {
+      dispatch(fetchCryptos(selectedCryptoIds))
+    }
+
+    if (selectedCityIds.length > 0) {
+      dispatch(fetchWeather(selectedCityIds))
+    }
+
     dispatch(fetchNews())
 
-    // Set up periodic refresh (every 60 seconds)
+    // Refresh data every 60 seconds
     const refreshInterval = setInterval(() => {
-      dispatch(fetchCryptos())
-      dispatch(fetchWeather())
+      if (selectedCryptoIds.length > 0) {
+        dispatch(fetchCryptos(selectedCryptoIds))
+      }
+
+      if (selectedCityIds.length > 0) {
+        dispatch(fetchWeather(selectedCityIds))
+      }
+
       dispatch(fetchNews())
     }, 60000)
 
-    // Set up WebSocket connection
-    const { disconnect, socket } = connectWebSocket()
+    // Set up WebSocket for real-time price alert toasts
+    const { socket, disconnect } = connectWebSocket()
+
+    let lastPrices: Record<string, number> = {}
 
     if (socket) {
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data)
 
-        // Handle different types of notifications
         if (data.type === "price_alert") {
-          toast({
-            title: "Price Alert",
-            description: `${data.crypto}: ${data.message}`,
-            variant: "default",
-          })
-        } else if (data.type === "weather_alert") {
-          toast({
-            title: "Weather Alert",
-            description: data.message,
-            variant: "destructive",
-          })
+          const { crypto, message } = data
+          const currentPrice = parseFloat(message.split("$")[1])
+          const lastPrice = lastPrices[crypto] || currentPrice
+
+          const change = ((currentPrice - lastPrice) / lastPrice) * 100
+
+          if (Math.abs(change) >= 0.5) {
+            toast({
+              title: "Price Alert",
+              description: `${crypto}: ${message}`,
+            })
+            lastPrices[crypto] = currentPrice
+          }
         }
       }
     }
@@ -59,7 +84,7 @@ export default function Dashboard() {
       clearInterval(refreshInterval)
       disconnect()
     }
-  }, [dispatch, toast])
+  }, [dispatch, toast, selectedCryptoIds, selectedCityIds])
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -70,7 +95,9 @@ export default function Dashboard() {
             <Bell className="h-4 w-4" />
           </Button>
         </div>
-        <p className="text-muted-foreground">Your dashboard for crypto and weather updates</p>
+        <p className="text-muted-foreground">
+          Your dashboard for crypto and weather updates
+        </p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -87,4 +114,3 @@ export default function Dashboard() {
     </div>
   )
 }
-

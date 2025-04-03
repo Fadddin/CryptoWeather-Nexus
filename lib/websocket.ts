@@ -1,80 +1,106 @@
 "use client"
 
-// This is a mock WebSocket implementation for demonstration purposes
-// In a real app, you would connect to a real WebSocket server
+// 🔁 Utility for reconnect delays
+const RECONNECT_DELAY = 5000
 
-export function connectWebSocket() {
-  console.log("Connecting to WebSocket...")
+/**
+ * Real-time CoinCap WebSocket for crypto price updates
+ */
+export function connectCryptoWebSocket(
+  coinIds: string[],
+  onPriceUpdate: (id: string, price: number) => void
+): { disconnect: () => void } {
+  let socket: WebSocket | null = null
+  let reconnectTimeout: NodeJS.Timeout
 
-  // Mock WebSocket events
-  const mockSocket = {
-    onmessage: (event: any) => {},
-    onopen: () => {},
-    onclose: () => {},
-    onerror: () => {},
-  }
+  const url = `wss://ws.coincap.io/prices?assets=${coinIds.join(",")}`
 
-  // Simulate WebSocket messages
-  const interval = setInterval(() => {
-    // Randomly decide whether to send a crypto or weather alert
-    const isWeatherAlert = Math.random() > 0.7
+  const connect = () => {
+    console.log(`[WebSocket] Connecting to ${url}`)
+    socket = new WebSocket(url)
 
-    if (isWeatherAlert) {
-      const cities = ["New York", "London", "Tokyo"]
-      const alerts = [
-        "Heavy rain expected in the next 24 hours",
-        "Temperature dropping significantly overnight",
-        "Strong winds advisory in effect",
-        "Heat wave warning issued",
-      ]
+    socket.onopen = () => {
+      console.log("[WebSocket] Connected to CoinCap ✅")
+    }
 
-      const city = cities[Math.floor(Math.random() * cities.length)]
-      const alert = alerts[Math.floor(Math.random() * alerts.length)]
-
-      const event = {
-        data: JSON.stringify({
-          type: "weather_alert",
-          city,
-          message: `${city}: ${alert}`,
-        }),
-      }
-
-      if (mockSocket.onmessage) {
-        mockSocket.onmessage(event)
-      }
-    } else {
-      const cryptos = ["Bitcoin", "Ethereum", "Solana"]
-      const movements = [
-        "up 2% in the last hour",
-        "down 1.5% in the last hour",
-        "experiencing high volatility",
-        "reached a new daily high",
-      ]
-
-      const crypto = cryptos[Math.floor(Math.random() * cryptos.length)]
-      const movement = movements[Math.floor(Math.random() * movements.length)]
-
-      const event = {
-        data: JSON.stringify({
-          type: "price_alert",
-          crypto,
-          message: `${movement}`,
-        }),
-      }
-
-      if (mockSocket.onmessage) {
-        mockSocket.onmessage(event)
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      for (const [coinId, price] of Object.entries(data)) {
+        onPriceUpdate(coinId, parseFloat(price as string))
       }
     }
-  }, 30000) // Send a message every 30 seconds
 
-  // Return mock socket and disconnect function
+    socket.onerror = (err) => {
+      console.error("[WebSocket] Error:", err)
+    }
+
+    socket.onclose = () => {
+      console.warn("[WebSocket] Disconnected. Reconnecting in 5s... 🔁")
+      reconnectTimeout = setTimeout(connect, RECONNECT_DELAY)
+    }
+  }
+
+  connect()
+
   return {
-    socket: mockSocket,
     disconnect: () => {
-      console.log("Disconnecting from WebSocket...")
-      clearInterval(interval)
+      clearTimeout(reconnectTimeout)
+      socket?.close()
+      console.log("[WebSocket] Manually disconnected")
     },
   }
 }
 
+/**
+ * Simulated WebSocket for dashboard toast alerts (price & weather)
+ */
+export function connectWebSocket() {
+  let socket: WebSocket | null = null
+  const url = `wss://ws.coincap.io/prices?assets=bitcoin,ethereum,solana`
+
+  const wrapper = {
+    socket: {
+      onmessage: null as null | ((event: MessageEvent) => void),
+    },
+    disconnect: () => {
+      socket?.close()
+      console.log("[WebSocket] Disconnected from Dashboard feed")
+    },
+  }
+
+  const connect = () => {
+    socket = new WebSocket(url)
+
+    socket.onopen = () => {
+      console.log("[WebSocket] Dashboard socket connected ✅")
+    }
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      const [coinId, price] = Object.entries(data)[0]
+
+      const mockEvent = {
+        data: JSON.stringify({
+          type: "price_alert",
+          crypto: coinId.charAt(0).toUpperCase() + coinId.slice(1),
+          message: `Price updated: $${parseFloat(price as string).toFixed(2)}`,
+        }),
+      }
+
+      wrapper.socket.onmessage?.(mockEvent as MessageEvent)
+    }
+
+    socket.onerror = (err) => {
+      console.error("[WebSocket] Dashboard socket error:", err)
+    }
+
+    socket.onclose = () => {
+      console.warn("[WebSocket] Dashboard socket disconnected. Retrying in 5s...")
+      setTimeout(connect, RECONNECT_DELAY)
+    }
+  }
+
+  connect()
+
+  return wrapper
+}
