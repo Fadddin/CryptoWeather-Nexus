@@ -41,7 +41,6 @@ export default function Dashboard() {
 
     // Data auto-refresh
     const refreshInterval = setInterval(() => {
-      console.log("🔁 Refreshing data...")
       if (selectedCityIds.length > 0) {
         dispatch(fetchWeather(selectedCityIds))
       }

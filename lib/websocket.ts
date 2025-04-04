@@ -16,27 +16,39 @@ export function connectCryptoWebSocket(
   const url = `wss://ws.coincap.io/prices?assets=${coinIds.join(",")}`
 
   const connect = () => {
-    console.log(`[WebSocket] Connecting to ${url}`)
-    socket = new WebSocket(url)
+    try {
+      socket = new WebSocket(url)
 
-    socket.onopen = () => {
-      console.log("[WebSocket] Connected to CoinCap ✅")
-    }
-
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      for (const [coinId, price] of Object.entries(data)) {
-        onPriceUpdate(coinId, parseFloat(price as string))
+      socket.onopen = () => {
+        if (process.env.NODE_ENV === "development") {
+          console.log("[WebSocket] Connected ✅")
+        }
       }
-    }
 
-    socket.onerror = (err) => {
-      console.log("[WebSocket] Error:", err)
-    }
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data)
+        for (const [coinId, price] of Object.entries(data)) {
+          onPriceUpdate(coinId, parseFloat(price as string))
+        }
+      }
 
-    socket.onclose = () => {
-      console.warn("[WebSocket] Disconnected. Reconnecting in 5s... 🔁")
-      reconnectTimeout = setTimeout(connect, RECONNECT_DELAY)
+      socket.onerror = () => {
+        // Suppress all errors unless in dev
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[WebSocket] Connection error ❌")
+        }
+      }
+
+      socket.onclose = () => {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[WebSocket] Disconnected. Reconnecting in 5s... 🔁")
+        }
+        reconnectTimeout = setTimeout(connect, 5000)
+      }
+    } catch (err) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[WebSocket] Exception:", err)
+      }
     }
   }
 
@@ -45,11 +57,13 @@ export function connectCryptoWebSocket(
   return {
     disconnect: () => {
       clearTimeout(reconnectTimeout)
-      socket?.close()
-      console.log("[WebSocket] Manually disconnected")
+      if (socket?.readyState === WebSocket.OPEN || socket?.readyState === WebSocket.CONNECTING) {
+        socket.close()
+      }
     },
   }
 }
+
 
 /**
  * Simulated WebSocket for dashboard toast alerts (price & weather)
@@ -64,7 +78,7 @@ export function connectWebSocket() {
     },
     disconnect: () => {
       socket?.close()
-      console.log("[WebSocket] Disconnected from Dashboard feed")
+
     },
   }
 
@@ -100,7 +114,7 @@ export function connectWebSocket() {
     socket = new WebSocket(url)
 
     socket.onopen = () => {
-      console.log("[WebSocket] Dashboard socket connected ✅")
+
     }
 
     socket.onmessage = (event) => {
@@ -119,11 +133,11 @@ export function connectWebSocket() {
     }
 
     socket.onerror = (err) => {
-      console.log("[WebSocket] Dashboard socket error:", err)
+
     }
 
     socket.onclose = () => {
-      console.warn("[WebSocket] Dashboard socket disconnected. Retrying in 5s...")
+
       setTimeout(connect, RECONNECT_DELAY)
     }
   }
