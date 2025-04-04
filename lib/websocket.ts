@@ -21,7 +21,7 @@ export function connectCryptoWebSocket(
 
       socket.onopen = () => {
         if (process.env.NODE_ENV === "development") {
-          console.log("[WebSocket] Connected ✅")
+
         }
       }
 
@@ -35,19 +35,19 @@ export function connectCryptoWebSocket(
       socket.onerror = () => {
         // Suppress all errors unless in dev
         if (process.env.NODE_ENV === "development") {
-          console.warn("[WebSocket] Connection error ❌")
+
         }
       }
 
       socket.onclose = () => {
         if (process.env.NODE_ENV === "development") {
-          console.warn("[WebSocket] Disconnected. Reconnecting in 5s... 🔁")
+
         }
         reconnectTimeout = setTimeout(connect, 5000)
       }
     } catch (err) {
       if (process.env.NODE_ENV === "development") {
-        console.error("[WebSocket] Exception:", err)
+
       }
     }
   }
