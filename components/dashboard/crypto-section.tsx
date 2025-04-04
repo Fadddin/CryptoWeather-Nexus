@@ -67,15 +67,18 @@ export default function CryptoSection() {
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4 ">
         {/* ComboBox */}
-        <CryptoCombobox
-          onSelect={(id) => {
-            if (!selectedCryptoIds.includes(id)) {
-              dispatch(setSelectedCryptos([...selectedCryptoIds, id]))
-            }
-          }}
-        />
+        <div className="max-w-sm">
+          <CryptoCombobox
+            onSelect={(id) => {
+              if (!selectedCryptoIds.includes(id)) {
+                dispatch(setSelectedCryptos([...selectedCryptoIds, id]))
+              }
+            }}
+          />
+        </div>
+        
 
         {/* Selected Tags */}
         <div className="flex flex-wrap gap-2">

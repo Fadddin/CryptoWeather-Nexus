@@ -23,7 +23,7 @@ export default function Combobox({
   )
 
   return (
-    <div className="relative  w-full max-w-md" onBlur={() => setTimeout(() => setOpen(false), 100)}>
+    <div className="relative w-full" onBlur={() => setTimeout(() => setOpen(false), 100)}>
       <input
         ref={inputRef}
         type="text"
