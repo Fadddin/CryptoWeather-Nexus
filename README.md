@@ -8,6 +8,7 @@ CryptoWeather Nexus is a modern, responsive web dashboard that integrates real-t
 - [Tech Stack](#tech-stack)
 - [Folder Structure](#folder-structure)
 - [Setup Instructions](#setup-instructions)
+- [Testing](#testing)
 - [Design Decisions](#design-decisions)
 - [Limitations](#limitations)
 - [Future Enhancements](#future-enhancements)
@@ -32,8 +33,9 @@ CryptoWeather Nexus is a modern, responsive web dashboard that integrates real-t
 - **APIs**:
   - **Crypto Data**: [CoinCap](https://docs.coincap.io)
   - **Weather Data**: [OpenWeatherMap](https://openweathermap.org/api)
-  - **News Data**: newsdata.io
+  - **News Data**: [newsdata.io](https://newsdata.io)
 - **Charting**: Custom chart components (using Chart.js)
+- **Testing**: Jest, React Testing Library
 
 ## Folder Structure
 
@@ -105,7 +107,19 @@ CryptoWeather Nexus is a modern, responsive web dashboard that integrates real-t
    npm build
    npm start
    ```
+## Testing
 
+Jest and React Testing Library for unit and integration tests.
+
+   Running Tests
+   ```shell
+   npm run test
+   ```
+   Running Tests in watch mode
+   ```shell
+   npm run test:watch
+   ```
+   
 ## Design Decisions
 
 - **Data Flow Management**: Utilizes Redux Toolkit for global state management with async thunks to handle API requests efficiently.
