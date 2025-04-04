@@ -8,8 +8,7 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "CryptoWeather Nexus",
-  description: "Dashboard for crypto and weather updates",
-    generator: 'v0.dev'
+  description: "Dashboard for crypto and weather updates"
 }
 
 export default function RootLayout({

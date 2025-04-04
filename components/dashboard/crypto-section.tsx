@@ -10,7 +10,6 @@ import {
   setFavoriteCryptoIds,
 } from "@/lib/redux/slices/cryptoSlice"
 import { connectCryptoWebSocket } from "@/lib/websocket"
-
 import CryptoCombobox from "@/components/combobox/CryptoCombobox"
 import { Star, TrendingUp, TrendingDown } from "lucide-react"
 import Link from "next/link"
