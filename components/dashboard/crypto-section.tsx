@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import {
   toggleFavoriteCrypto,
@@ -14,15 +14,6 @@ import CryptoCombobox from "@/components/combobox/CryptoCombobox"
 import { Star, TrendingUp, TrendingDown } from "lucide-react"
 import Link from "next/link"
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-
 export default function CryptoSection() {
   const dispatch = useAppDispatch()
   const {
@@ -35,21 +26,17 @@ export default function CryptoSection() {
 
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
 
-  // Load from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("selectedCryptoIds")
     if (saved) dispatch(setSelectedCryptos(JSON.parse(saved)))
-
     const savedFav = localStorage.getItem("favoriteCryptoIds")
     if (savedFav) dispatch(setFavoriteCryptoIds(JSON.parse(savedFav)))
   }, [dispatch])
 
-  // Save favorites
   useEffect(() => {
     localStorage.setItem("favoriteCryptoIds", JSON.stringify(favoriteCryptoIds))
   }, [favoriteCryptoIds])
 
-  // Fetch data for selected + favorite cryptos
   useEffect(() => {
     const merged = Array.from(new Set([...selectedCryptoIds, ...favoriteCryptoIds]))
     if (merged.length > 0) {
@@ -58,7 +45,6 @@ export default function CryptoSection() {
     }
   }, [dispatch, selectedCryptoIds, favoriteCryptoIds])
 
-  // WebSocket
   useEffect(() => {
     const merged = Array.from(new Set([...selectedCryptoIds, ...favoriteCryptoIds]))
     if (merged.length === 0) return
@@ -73,147 +59,149 @@ export default function CryptoSection() {
   }, [dispatch, selectedCryptoIds, favoriteCryptoIds])
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Cryptocurrency Tracker</CardTitle>
-        <CardDescription>
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Cryptocurrency Tracker</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Select and monitor your favorite coins in real time
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
-          {/* ComboBox */}
-          <CryptoCombobox
-            onSelect={(id) => {
-              if (!selectedCryptoIds.includes(id)) {
-                dispatch(setSelectedCryptos([...selectedCryptoIds, id]))
-              }
-            }}
-          />
+        </p>
+      </div>
 
-          {/* Selected Tags */}
-          <div className="flex flex-wrap gap-2">
-            {selectedCryptoIds.map((id) => {
-              const name = id.charAt(0).toUpperCase() + id.slice(1)
-              return (
-                <div
-                  key={id}
-                  className="flex items-center gap-2 border px-3 py-1 rounded-md bg-muted"
+      <div className="space-y-4">
+        {/* ComboBox */}
+        <CryptoCombobox
+          onSelect={(id) => {
+            if (!selectedCryptoIds.includes(id)) {
+              dispatch(setSelectedCryptos([...selectedCryptoIds, id]))
+            }
+          }}
+        />
+
+        {/* Selected Tags */}
+        <div className="flex flex-wrap gap-2">
+          {selectedCryptoIds.map((id) => {
+            const name = id.charAt(0).toUpperCase() + id.slice(1)
+            return (
+              <div
+                key={id}
+                className="flex items-center gap-2 border px-3 py-1 rounded-md bg-gray-100 dark:bg-gray-800"
+              >
+                <span className="text-sm text-gray-800 dark:text-gray-200">{name}</span>
+                <button
+                  className="text-sm text-gray-500 hover:text-red-500"
+                  onClick={() =>
+                    dispatch(setSelectedCryptos(selectedCryptoIds.filter((c) => c !== id)))
+                  }
                 >
-                  <span>{name}</span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() =>
-                      dispatch(setSelectedCryptos(selectedCryptoIds.filter((c) => c !== id)))
-                    }
-                  >
-                    ×
-                  </Button>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Toggle */}
-          <div className="flex justify-end">
-            <Button
-              variant={showFavoritesOnly ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-            >
-              {showFavoritesOnly ? "Show All" : "Show Favorites Only"}
-            </Button>
-          </div>
+                  ×
+                </button>
+              </div>
+            )
+          })}
         </div>
 
-        {/* Loading */}
-        {loading && (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center space-x-4 rounded-md border p-4">
-                <div className="space-y-2 w-full">
-                  <div className="h-4 bg-muted rounded w-1/3 animate-pulse"></div>
-                  <div className="h-3 bg-muted rounded w-1/2 animate-pulse"></div>
+        {/* Toggle Favorites */}
+        <div className="flex justify-end">
+          <button
+            className={`px-3 py-1 text-sm rounded-md border  hover:bg-gray-700 focus:border-blue-600 ${
+              showFavoritesOnly
+                ? "bg-gray-800 text-white"
+                : "bg-transparent text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+            }`}
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+          >
+            {showFavoritesOnly ? "Show All" : "Show Favorites Only"}
+          </button>
+        </div>
+      </div>
+
+      {/* Loading */}
+      {loading && (
+        <div className="space-y-4 mt-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center space-x-4 rounded-md border p-4">
+              <div className="space-y-2 w-full">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 animate-pulse"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="bg-red-100 dark:bg-red-900 p-4 rounded-md mt-4">
+          <p className="text-red-700 dark:text-red-200 text-sm">
+            Failed to load cryptocurrency data. Please try again later.
+          </p>
+        </div>
+      )}
+
+      {/* Crypto List */}
+      {!loading && !error && (
+        <div className="space-y-4 mt-4">
+          {cryptos
+            .filter((c) => (showFavoritesOnly ? c.isFavorite : true))
+            .map((crypto) => (
+              <div
+                key={crypto.id}
+                className="flex items-center space-x-4 rounded-md border border-gray-200 dark:border-gray-700 p-4"
+              >
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{crypto.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{crypto.symbol}</p>
+                    </div>
+                    <button
+                      className={`text-sm ${
+                        crypto.isFavorite ? "text-yellow-500" : "text-gray-400"
+                      }`}
+                      onClick={() => dispatch(toggleFavoriteCrypto(crypto.id))}
+                    >
+                      <Star className="h-4 w-4" />
+                      <span className="sr-only">Favorite</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <p className="text-xl font-bold text-gray-900 dark:text-white">
+                      ${crypto.price.toLocaleString()}
+                    </p>
+                    <div className="flex items-center space-x-1">
+                      {crypto.priceChange24h >= 0 ? (
+                        <>
+                          <TrendingUp className="h-4 w-4 text-green-500" />
+                          <span className="text-sm text-green-500">
+                            +{crypto.priceChange24h.toFixed(2)}%
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <TrendingDown className="h-4 w-4 text-red-500" />
+                          <span className="text-sm text-red-500">
+                            {crypto.priceChange24h.toFixed(2)}%
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Market Cap: ${crypto.marketCap.toLocaleString()}
+                  </p>
                 </div>
+
+                <Link href={`/crypto/${crypto.id}`}>
+                  <button className="px-3 py-1 text-sm rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200  hover:bg-gray-700 focus:border-blue-600">
+                    Details
+                  </button>
+                </Link>
               </div>
             ))}
-          </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="bg-destructive/10 p-4 rounded-md">
-            <p className="text-destructive">
-              Failed to load cryptocurrency data. Please try again later.
-            </p>
-          </div>
-        )}
-
-        {/* Crypto List */}
-        {/* Crypto List */}
-{!loading && !error && (
-  <div className="space-y-4">
-    {cryptos
-      .filter((c) => (showFavoritesOnly ? c.isFavorite : true))
-      .map((crypto) => (
-        <div
-          key={crypto.id}
-          className="flex items-center space-x-4 rounded-md border p-4"
-        >
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <p className="text-sm font-medium leading-none">{crypto.name}</p>
-                <p className="text-sm text-muted-foreground">{crypto.symbol}</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => dispatch(toggleFavoriteCrypto(crypto.id))}
-                className={
-                  crypto.isFavorite ? "text-yellow-500" : "text-muted-foreground"
-                }
-              >
-                <Star className="h-4 w-4" />
-                <span className="sr-only">Favorite</span>
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <p className="text-xl font-bold">${crypto.price.toLocaleString()}</p>
-              <div className="flex items-center space-x-1">
-                {crypto.priceChange24h >= 0 ? (
-                  <>
-                    <TrendingUp className="h-4 w-4 text-green-500" />
-                    <span className="text-sm text-green-500">
-                      +{crypto.priceChange24h.toFixed(2)}%
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <TrendingDown className="h-4 w-4 text-red-500" />
-                    <span className="text-sm text-red-500">
-                      {crypto.priceChange24h.toFixed(2)}%
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Market Cap: ${crypto.marketCap.toLocaleString()}
-            </p>
-          </div>
-          <Link href={`/crypto/${crypto.id}`}>
-            <Button variant="outline" size="sm">
-              Details
-            </Button>
-          </Link>
         </div>
-      ))}
-  </div>
-)}
-
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }

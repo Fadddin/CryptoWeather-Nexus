@@ -10,22 +10,6 @@ import {
   BarChart3,
 } from "lucide-react"
 import axios from "axios"
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import CryptoChart from "@/components/crypto/crypto-chart"
 import CryptoMetrics from "@/components/crypto/crypto-metrics"
 import { connectCryptoWebSocket } from "@/lib/websocket"
@@ -37,15 +21,14 @@ export default function CryptoDetailPage() {
   const [crypto, setCrypto] = useState<any>(null)
   const [chartData, setChartData] = useState<{ date: string; price: number }[]>([])
   const [loading, setLoading] = useState(true)
-  const [timeframe, setTimeframe] = useState("7") // default is 7 days
+  const [timeframe, setTimeframe] = useState("7")
+  const [tab, setTab] = useState("chart")
 
-  // Fetch crypto details + chart data
   useEffect(() => {
     async function fetchCryptoDetails() {
       try {
         setLoading(true)
 
-        // Current price data
         const res = await axios.get("https://api.coingecko.com/api/v3/coins/markets", {
           params: {
             vs_currency: "usd",
@@ -54,7 +37,6 @@ export default function CryptoDetailPage() {
         })
         const data = res.data[0]
 
-        // Chart history
         const historyRes = await axios.get(
           `https://api.coingecko.com/api/v3/coins/${id}/market_chart`,
           {
@@ -104,7 +86,6 @@ export default function CryptoDetailPage() {
     }
   }, [id, timeframe, router])
 
-  // Live updates
   useEffect(() => {
     if (!crypto?.id) return
 
@@ -136,12 +117,12 @@ export default function CryptoDetailPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center mb-6">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+          <button onClick={() => router.back()} className="text-sm text-gray-600 hover:underline flex items-center gap-1">
             <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-2xl font-bold ml-2">Loading...</h1>
+            Back
+          </button>
         </div>
-        <div className="h-64 bg-muted rounded-md animate-pulse" />
+        <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-md animate-pulse" />
       </div>
     )
   }
@@ -149,107 +130,103 @@ export default function CryptoDetailPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center mb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        <button onClick={() => router.back()} className="text-sm text-gray-600 hover:underline flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-2xl font-bold ml-2">
+          Back
+        </button>
+        <h1 className="text-2xl font-bold ml-4">
           {crypto.name} ({crypto.symbol})
         </h1>
       </div>
 
-      {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Current Price</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <DollarSign className="mr-1 h-4 w-4 text-muted-foreground" />
-              <div className="text-3xl font-bold">
-                ${crypto.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-gray-100 dark:bg-gray-900 rounded-md p-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Current Price</p>
+          <div className="flex items-center text-3xl font-bold">
+            <DollarSign className="mr-1 h-5 w-5 text-gray-500" />
+            ${crypto.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">24h Change</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              {crypto.priceChange24h >= 0 ? (
-                <>
-                  <TrendingUp className="mr-2 h-4 w-4 text-green-500" />
-                  <div className="text-3xl font-bold text-green-500">
-                    +{crypto.priceChange24h.toFixed(2)}%
-                  </div>
-                </>
-              ) : (
-                <>
-                  <TrendingDown className="mr-2 h-4 w-4 text-red-500" />
-                  <div className="text-3xl font-bold text-red-500">
-                    {crypto.priceChange24h.toFixed(2)}%
-                  </div>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-gray-100 dark:bg-gray-900 rounded-md p-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">24h Change</p>
+          <div className="flex items-center text-3xl font-bold">
+            {crypto.priceChange24h >= 0 ? (
+              <>
+                <TrendingUp className="mr-2 h-5 w-5 text-green-500" />
+                <span className="text-green-500">
+                  +{crypto.priceChange24h.toFixed(2)}%
+                </span>
+              </>
+            ) : (
+              <>
+                <TrendingDown className="mr-2 h-5 w-5 text-red-500" />
+                <span className="text-red-500">
+                  {crypto.priceChange24h.toFixed(2)}%
+                </span>
+              </>
+            )}
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Market Cap</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <BarChart3 className="mr-2 h-4 w-4 text-muted-foreground" />
-              <div className="text-3xl font-bold">
-                ${(crypto.marketCap / 1e9).toFixed(2)}B
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-gray-100 dark:bg-gray-900 rounded-md p-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Market Cap</p>
+          <div className="flex items-center text-3xl font-bold">
+            <BarChart3 className="mr-2 h-5 w-5 text-gray-500" />
+            ${(crypto.marketCap / 1e9).toFixed(2)}B
+          </div>
+        </div>
       </div>
 
-      {/* Chart & Metrics Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>Historical Data</CardTitle>
-              <CardDescription>
-                Price history and trading volume
-              </CardDescription>
-            </div>
-            <Select value={timeframe} onValueChange={setTimeframe}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Timeframe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Last 24 Hours</SelectItem>
-                <SelectItem value="7">Last 7 Days</SelectItem>
-                <SelectItem value="30">Last 30 Days</SelectItem>
-              </SelectContent>
-            </Select>
+      <div className="bg-gray-100 dark:bg-gray-900 rounded-md p-6">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 className="text-lg font-semibold">Historical Data</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Price & metrics</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="chart">
-            <TabsList className="mb-4">
-              <TabsTrigger value="chart">Price Chart</TabsTrigger>
-              <TabsTrigger value="metrics">Extended Metrics</TabsTrigger>
-            </TabsList>
-            <TabsContent value="chart">
-              <CryptoChart data={chartData} />
-            </TabsContent>
-            <TabsContent value="metrics">
-              <CryptoMetrics metrics={extendedMetrics} />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+          <select
+            value={timeframe}
+            onChange={(e) => setTimeframe(e.target.value)}
+            className="border border-gray-300 dark:border-gray-700 rounded px-2 py-1 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+          >
+            <option value="1">Last 24 Hours</option>
+            <option value="7">Last 7 Days</option>
+            <option value="30">Last 30 Days</option>
+          </select>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-4 mb-4">
+          <button
+            onClick={() => setTab("chart")}
+            className={`px-4 py-1 text-sm rounded ${
+              tab === "chart"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+            }`}
+          >
+            Price Chart
+          </button>
+          <button
+            onClick={() => setTab("metrics")}
+            className={`px-4 py-1 text-sm rounded ${
+              tab === "metrics"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+            }`}
+          >
+            Extended Metrics
+          </button>
+        </div>
+
+        <div className="mt-4">
+          {tab === "metrics" ? (
+            <CryptoMetrics metrics={extendedMetrics} />
+          ) : (
+            <CryptoChart data={chartData} />
+          )}
+        </div>
+      </div>
     </div>
   )
 }

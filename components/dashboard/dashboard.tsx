@@ -15,7 +15,6 @@ import { connectWebSocket } from "@/lib/websocket"
 import CryptoSection from "@/components/dashboard/crypto-section"
 import WeatherSection from "@/components/dashboard/weather-section"
 import NewsSection from "@/components/dashboard/news-section"
-import { Button } from "@/components/ui/button"
 
 export default function Dashboard() {
   const dispatch = useAppDispatch()
@@ -29,8 +28,7 @@ export default function Dashboard() {
   )
 
   useEffect(() => {
-    // Initial fetch
-
+    // Initial data fetch
     if (selectedCryptoIds.length > 0) {
       dispatch(fetchCryptos(selectedCryptoIds))
     }
@@ -41,22 +39,17 @@ export default function Dashboard() {
 
     dispatch(fetchNews())
 
-    // Refresh data every 60 seconds
+    // Data auto-refresh
     const refreshInterval = setInterval(() => {
-      // if (selectedCryptoIds.length > 0) {
-      //   dispatch(fetchCryptos(selectedCryptoIds))
-      // }
-      console.log("refreshing data...")
+      console.log("🔁 Refreshing data...")
       if (selectedCityIds.length > 0) {
         dispatch(fetchWeather(selectedCityIds))
       }
-
       dispatch(fetchNews())
     }, 60000)
 
-    // Set up WebSocket for real-time price alert toasts
+    // WebSocket for price and weather alerts
     const { socket, disconnect } = connectWebSocket()
-
     let lastPrices: Record<string, number> = {}
 
     if (socket) {
@@ -67,53 +60,50 @@ export default function Dashboard() {
           const { crypto, message } = data
           const currentPrice = parseFloat(message.split("$")[1])
           const lastPrice = lastPrices[crypto] || currentPrice
-
           const change = ((currentPrice - lastPrice) / lastPrice) * 100
 
           if (Math.abs(change) >= 0.01) {
             toast({
-              title: "Price Alert",
+              title: "📈 Price Alert",
               description: `${crypto}: ${message}`,
             })
             lastPrices[crypto] = currentPrice
           }
         }
+
         if (data.type === "weather_alert") {
           toast({
-            title: `Weather Alert - ${data.city}`,
-            description: `${data.message} (mockdata) `,
+            title: `🌦️ Weather Alert - ${data.city}`,
+            description: `${data.message} (mock alert)`,
           })
         }
-        
       }
     }
 
-    // return () => {
-    //   clearInterval(refreshInterval)
-    //   disconnect()
-    // }
+    return () => {
+      clearInterval(refreshInterval)
+      disconnect()
+    }
   }, [dispatch, toast, selectedCryptoIds, selectedCityIds])
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-8">
       <header className="mb-8">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">CryptoWeather Nexus</h1>
-          <Button variant="outline" size="icon">
+          <button className="border rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
             <Bell className="h-4 w-4" />
-          </Button>
+          </button>
         </div>
-        <p className="text-muted-foreground">
-          Your dashboard for crypto and weather updates
+        <p className="text-gray-500 dark:text-gray-400 mt-1">
+          Your dashboard for real-time cryptocurrency and weather updates.
         </p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <div className="grid gap-6">
-            <WeatherSection />
-            <CryptoSection />
-          </div>
+        <div className="lg:col-span-2 space-y-6">
+          <WeatherSection />
+          <CryptoSection />
         </div>
         <div>
           <NewsSection />
