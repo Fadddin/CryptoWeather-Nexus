@@ -30,6 +30,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Initial fetch
+
     if (selectedCryptoIds.length > 0) {
       dispatch(fetchCryptos(selectedCryptoIds))
     }
@@ -41,17 +42,17 @@ export default function Dashboard() {
     dispatch(fetchNews())
 
     // Refresh data every 60 seconds
-    // const refreshInterval = setInterval(() => {
-    //   if (selectedCryptoIds.length > 0) {
-    //     dispatch(fetchCryptos(selectedCryptoIds))
-    //   }
+    const refreshInterval = setInterval(() => {
+      // if (selectedCryptoIds.length > 0) {
+      //   dispatch(fetchCryptos(selectedCryptoIds))
+      // }
+      console.log("refreshing data...")
+      if (selectedCityIds.length > 0) {
+        dispatch(fetchWeather(selectedCityIds))
+      }
 
-    //   if (selectedCityIds.length > 0) {
-    //     dispatch(fetchWeather(selectedCityIds))
-    //   }
-
-    //   dispatch(fetchNews())
-    // }, 60000)
+      dispatch(fetchNews())
+    }, 60000)
 
     // Set up WebSocket for real-time price alert toasts
     const { socket, disconnect } = connectWebSocket()
